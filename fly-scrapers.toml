@@ -1,0 +1,55 @@
+# fly-scrapers.toml — KOKO MLS Property Valuation scraper workers + cron jobs
+#
+# This app reuses the same Dockerfile as the main API but overrides the CMD via
+# the [processes] block below. It does NOT serve HTTP — there is no
+# [http_service] section.
+#
+# Cron scheduling is handled by supercronic, which reads a crontab file baked
+# into the image at /app/infra/crontab. The Docker build is expected to:
+#   1. Install supercronic (https://github.com/aptible/supercronic)
+#   2. COPY infra/crontab into /app/infra/crontab
+#
+# Scheduled jobs (see infra/crontab):
+#   - scraper-vivanuncios: every 6 hours, with built-in rate limiting
+#   - banxico-fx:          daily at 06:00 UTC (00:00 CDMX) for USD/MXN refresh
+#   - cleanup-stale:       nightly at 04:00 UTC
+#
+# IMPORTANT: the "scrapers" process MUST have min_machines_running = 1 so
+# that supercronic is always alive to fire scheduled jobs. Configure this
+# via `fly scale count scrapers=1 --min-machines-running=1` after deploy
+# (Fly currently sets this on the machine/process group, not in fly.toml).
+
+app = "koko-valuation-scrapers"
+primary_region = "qro"
+
+[build]
+
+[env]
+  ENVIRONMENT = "production"
+  LOG_LEVEL = "INFO"
+  PYTHONUNBUFFERED = "1"
+  SCRAPER_INTERVAL_HOURS = "6"
+
+[processes]
+  scrapers = "supercronic /app/infra/crontab"
+  worker = "python -m scrapers.worker"
+
+[deploy]
+  strategy = "rolling"
+
+[[restart]]
+  policy = "always"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"
+  cpu_kind = "shared"
+  cpus = 1
+  processes = ["scrapers"]
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"
+  cpu_kind = "shared"
+  cpus = 1
+  processes = ["worker"]

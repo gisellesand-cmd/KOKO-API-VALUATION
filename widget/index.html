@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="es-MX">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>KOKO Valuation Widget — dev</title>
+  </head>
+  <body style="background: #f7f8fa; margin: 0; padding: 40px;">
+    <div style="max-width: 520px; margin: 0 auto;">
+      <h1 style="font-family: system-ui, sans-serif; font-size: 18px; color: #5f6b7a;">Widget dev shell</h1>
+      <div id="koko-widget"></div>
+    </div>
+    <script type="module">
+      import KokoWidget from '/src/main.tsx';
+      KokoWidget.mount(document.getElementById('koko-widget'), {
+        apiUrl: 'http://localhost:8000',
+        locale: 'es',
+      });
+    </script>
+  </body>
+</html>

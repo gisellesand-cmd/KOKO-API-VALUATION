@@ -1,0 +1,51 @@
+# Version control
+.git
+.gitignore
+.github
+
+# Python virtual environments
+.venv
+venv
+env
+
+# Python bytecode and caches
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache
+.mypy_cache
+.ruff_cache
+
+# Tests (not needed in production image)
+tests/
+
+# Documentation (exclude all markdown, then re-include README)
+*.md
+!README.md
+
+# Environment files (never bake secrets into the image)
+.env*
+!.env.example
+
+# Compose file is for local dev only
+docker-compose.yml
+
+# Editor / IDE config
+.vscode
+.idea
+*.code-workspace
+
+# OS junk
+.DS_Store
+
+# Operational scripts not needed inside the image
+infra/backup.sh
+monitoring/
+
+# Coverage / build artifacts
+htmlcov
+.coverage
+dist/
+build/
+*.egg-info

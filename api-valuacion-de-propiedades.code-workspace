@@ -1,0 +1,9 @@
+{
+  "folders": [{"path": ".", "name": "QB (API VALUACION DE PROPIEDADES)"},{"path": "../api-valuacion-de-propiedades-ui", "name": "Ui"},{"path": "../api-valuacion-de-propiedades-frontend", "name": "Frontend"},{"path": "../api-valuacion-de-propiedades-backend", "name": "Backend"},{"path": "../api-valuacion-de-propiedades-api", "name": "Api"},{"path": "../api-valuacion-de-propiedades-database", "name": "Database"},{"path": "../api-valuacion-de-propiedades-ml", "name": "Ml"},{"path": "../api-valuacion-de-propiedades-auth", "name": "Auth"},{"path": "../api-valuacion-de-propiedades-devops", "name": "Devops"},{"path": "../api-valuacion-de-propiedades-data", "name": "Data"},{"path": "../api-valuacion-de-propiedades-tests", "name": "Tests"}],
+  "settings": {
+    "files.exclude": {
+      "**/.git": true,
+      "**/.DS_Store": true
+    }
+  }
+}

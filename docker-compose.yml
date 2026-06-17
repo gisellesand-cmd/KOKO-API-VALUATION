@@ -1,0 +1,104 @@
+# Local development stack for KOKO MLS Property Valuation API.
+# Brings up: FastAPI app, Postgres, Redis, and the scraper worker.
+#
+# Usage:
+#   cp .env.example .env.local
+#   docker compose up --build
+#
+# The api service is started with --reload and mounts ./api and ./db for
+# hot reloading. Do NOT use this compose file in production.
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: koko-mls-api:local
+    container_name: koko-api
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env.local
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      # Mount source directories for hot reload during development
+      - ./api:/app/api
+      - ./db:/app/db
+    # Override the production CMD to enable uvicorn auto-reload
+    command:
+      - uvicorn
+      - api.main:app
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8080"
+      - --reload
+    networks:
+      - koko_net
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: koko-postgres
+    environment:
+      POSTGRES_USER: koko
+      POSTGRES_PASSWORD: koko_dev
+      POSTGRES_DB: koko_mls
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U koko"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - koko_net
+
+  redis:
+    image: redis:7-alpine
+    container_name: koko-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    networks:
+      - koko_net
+
+  scrapers-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: koko-mls-api:local
+    container_name: koko-scrapers-worker
+    command:
+      - python
+      - -m
+      - scrapers.worker
+    env_file:
+      - .env.local
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - koko_net
+
+networks:
+  koko_net:
+    name: koko_net
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:

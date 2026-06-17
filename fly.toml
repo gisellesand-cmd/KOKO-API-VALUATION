@@ -1,0 +1,57 @@
+# fly.toml — KOKO MLS Property Valuation API (public API)
+# Primary region "qro" (Querétaro, MX) is closest to our user base.
+# NOTE: if "qro" is not yet supported on your Fly organization, fall back to "iad".
+
+app = "koko-valuation-api"
+primary_region = "qro"
+kill_signal = "SIGINT"
+kill_timeout = "30s"
+
+[build]
+
+[deploy]
+  release_command = "/app/infra/migrate.sh"
+
+[env]
+  ENVIRONMENT = "production"
+  LOG_LEVEL = "INFO"
+  PORT = "8080"
+  PYTHONUNBUFFERED = "1"
+
+[processes]
+  app = "uvicorn api.main:app --host 0.0.0.0 --port 8080 --workers 2 --proxy-headers --forwarded-allow-ips=*"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = false
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ["app"]
+
+  [http_service.concurrency]
+    type = "requests"
+    hard_limit = 250
+    soft_limit = 200
+
+  [[http_service.checks]]
+    grace_period = "10s"
+    interval = "30s"
+    method = "get"
+    timeout = "5s"
+    path = "/health"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"
+  cpu_kind = "shared"
+  cpus = 1
+
+[[mounts]]
+  source = "koko_api_data"
+  destination = "/data"
+  initial_size = "1gb"
+
+[metrics]
+  port = 9091
+  path = "/metrics"
