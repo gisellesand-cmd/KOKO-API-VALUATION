@@ -10,9 +10,12 @@ logger = logging.getLogger(__name__)
 
 try:
     from sqlalchemy import select
-    from db.models import ExchangeRate  # type: ignore
+    from db.models import City, ExchangeRate, PropertyType, Zone  # type: ignore
 except ImportError:  # DB layer may not be present yet
+    City = None  # type: ignore
     ExchangeRate = None  # type: ignore
+    PropertyType = None  # type: ignore
+    Zone = None  # type: ignore
     select = None  # type: ignore
 
 
@@ -66,6 +69,29 @@ async def normalize_price_to_mxn(
     return None
 
 
+async def _resolve_city_id(session: Any, city_slug: str) -> Optional[int]:
+    if City is None or select is None:
+        return None
+    stmt = select(City.id).where(City.slug == city_slug)
+    return (await session.execute(stmt)).scalar_one_or_none()
+
+
+async def _resolve_property_type_id(session: Any, pt_slug: str) -> Optional[int]:
+    if PropertyType is None or select is None:
+        return None
+    stmt = select(PropertyType.id).where(PropertyType.slug == pt_slug)
+    return (await session.execute(stmt)).scalar_one_or_none()
+
+
+async def _resolve_zone_id(
+    session: Any, city_id: int, zone_slug: Optional[str]
+) -> Optional[int]:
+    if not zone_slug or Zone is None or select is None:
+        return None
+    stmt = select(Zone.id).where(Zone.city_id == city_id).where(Zone.slug == zone_slug)
+    return (await session.execute(stmt)).scalar_one_or_none()
+
+
 async def normalize_payload(
     payload: ListingPayload, session: Any
 ) -> Optional[dict]:
@@ -78,16 +104,42 @@ async def normalize_payload(
             extra={"event": "invalid_price", "source_url": payload.source_url},
         )
         return None
-    price_per_m2 = None
-    if payload.area_m2 and payload.area_m2 > 0:
-        price_per_m2 = price_mxn / payload.area_m2
+    # The Comparable table requires area_m2 (NOT NULL). The PRD rule
+    # "no fabricated data" means we drop listings where the portal didn't
+    # publish a square-meter figure rather than guess one.
+    if not payload.area_m2 or payload.area_m2 <= 0:
+        logger.info(
+            "dropping listing — no area_m2",
+            extra={"event": "missing_area", "source_url": payload.source_url},
+        )
+        return None
+    city_id = await _resolve_city_id(session, payload.city)
+    if city_id is None:
+        logger.warning(
+            "dropping listing — unknown city",
+            extra={"event": "unknown_city", "city": payload.city, "source_url": payload.source_url},
+        )
+        return None
+    property_type_id = await _resolve_property_type_id(session, payload.property_type)
+    if property_type_id is None:
+        logger.warning(
+            "dropping listing — unknown property_type",
+            extra={
+                "event": "unknown_property_type",
+                "property_type": payload.property_type,
+                "source_url": payload.source_url,
+            },
+        )
+        return None
+    zone_id = await _resolve_zone_id(session, city_id, payload.zone)
+    price_per_m2 = price_mxn / payload.area_m2
     return {
         "source": payload.source,
         "source_listing_id": payload.source_listing_id,
         "source_url": payload.source_url,
-        "city": payload.city,
-        "zone": payload.zone,
-        "property_type": payload.property_type,
+        "city_id": city_id,
+        "zone_id": zone_id,
+        "property_type_id": property_type_id,
         "operation": payload.operation,
         "price_original": payload.price,
         "currency_original": payload.currency,
