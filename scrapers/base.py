@@ -201,17 +201,35 @@ class BaseScraper(ABC):
         cleaned = re.sub(r"[^\d.,]", "", price_text)
         if not cleaned:
             raise ScrapeError("price_unparseable", value=price_text)
-        # Pick whichever of '.' or ',' appears LAST as the decimal separator;
-        # strip the other as a thousands separator. Mexican formats use both
-        # conventions across portals so we can't hardcode one.
-        last_dot = cleaned.rfind(".")
-        last_comma = cleaned.rfind(",")
-        if last_dot == -1 and last_comma == -1:
-            normalized = cleaned
-        elif last_dot > last_comma:
+        # If the same separator appears more than once (e.g. "2,703,000"),
+        # all instances of it are thousands separators — a number can have at
+        # most one decimal point.
+        comma_count = cleaned.count(",")
+        dot_count = cleaned.count(".")
+        if comma_count > 1 and dot_count == 0:
             normalized = cleaned.replace(",", "")
-        else:
+        elif dot_count > 1 and comma_count == 0:
+            normalized = cleaned.replace(".", "")
+        elif comma_count > 1 and dot_count > 0:
+            # comma is thousands, dot is decimal
+            normalized = cleaned.replace(",", "")
+        elif dot_count > 1 and comma_count > 0:
+            # dot is thousands, comma is decimal
             normalized = cleaned.replace(".", "").replace(",", ".")
+        else:
+            # At most one of each. Last separator wins as decimal,
+            # unless it's a comma followed by exactly 3 digits (Mexican thousands).
+            last_dot = cleaned.rfind(".")
+            last_comma = cleaned.rfind(",")
+            if last_dot == -1 and last_comma == -1:
+                normalized = cleaned
+            elif last_dot > last_comma:
+                normalized = cleaned.replace(",", "")
+            elif last_comma >= 0 and last_dot == -1 and len(cleaned) - last_comma - 1 == 3:
+                # e.g. "2,500" — Mexican thousands separator, not European decimal.
+                normalized = cleaned.replace(",", "")
+            else:
+                normalized = cleaned.replace(".", "").replace(",", ".")
         try:
             return Decimal(normalized)
         except InvalidOperation as exc:

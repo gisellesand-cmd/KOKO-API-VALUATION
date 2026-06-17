@@ -8,6 +8,13 @@ import sys
 from datetime import datetime, timezone
 from typing import Any, Optional
 
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
+from scrapers.apify_runner import ApifyScraper, ConfigurationError
 from scrapers.base import ScrapeError
 from scrapers.inmuebles24 import Inmuebles24Scraper
 from scrapers.normalize import normalize_payload
@@ -16,13 +23,14 @@ from scrapers.vivanuncios import VivanunciosScraper
 logger = logging.getLogger(__name__)
 
 try:
-    from sqlalchemy import select
+    from sqlalchemy import literal_column, select
     from sqlalchemy.dialects.postgresql import insert as pg_insert
     from db.models import Comparable, ScrapeRun  # type: ignore
     from db.session import get_session  # type: ignore
 except ImportError:
     Comparable = None  # type: ignore
     ScrapeRun = None  # type: ignore
+    literal_column = None  # type: ignore
     select = None  # type: ignore
     pg_insert = None  # type: ignore
     get_session = None  # type: ignore
@@ -32,6 +40,21 @@ SCRAPERS = {
     "inmuebles24": Inmuebles24Scraper,
     "vivanuncios": VivanunciosScraper,
 }
+
+
+def _resolve_via(requested: str) -> str:
+    if requested == "auto":
+        return "apify" if os.environ.get("APIFY_TOKEN") else "httpx"
+    return requested
+
+
+def _build_scraper(source: str, via: str):
+    if via == "apify":
+        return ApifyScraper(source_key=source)
+    cls = SCRAPERS.get(source)
+    if cls is None:
+        raise RuntimeError(f"unknown source: {source}")
+    return cls()
 
 
 async def _upsert_comparable(session: Any, data: dict) -> str:
@@ -58,7 +81,8 @@ async def _upsert_comparable(session: Any, data: dict) -> str:
         set_=update_cols,
     )
     # xmax = 0 on the inserted row → freshly inserted; non-zero → updated.
-    stmt = stmt.returning((Comparable.__table__.c.xmax == 0).label("inserted"))
+    # xmax is a Postgres system column not in the ORM mapping, so use literal_column.
+    stmt = stmt.returning((literal_column("xmax") == 0).label("inserted"))
     result = await session.execute(stmt)
     row = result.first()
     if row is not None and getattr(row, "inserted", False):
@@ -121,9 +145,23 @@ async def main() -> int:
         level=os.environ.get("LOG_LEVEL", "INFO"),
         format="%(asctime)s %(levelname)s %(name)s %(message)s",
     )
-    scraper_cls = SCRAPERS.get(args.source)
-    if scraper_cls is None:
+    if args.source not in SCRAPERS:
         logger.error("unknown source", extra={"source": args.source})
+        return 1
+
+    via = _resolve_via(args.via)
+    logger.info(
+        "selected scrape backend",
+        extra={"event": "via_selected", "via": via, "requested": args.via},
+    )
+
+    try:
+        scraper = _build_scraper(args.source, via)
+    except ConfigurationError as exc:
+        logger.error(
+            "scraper configuration failed",
+            extra={"event": "scraper_config_failed", "via": via, "error": str(exc)},
+        )
         return 1
 
     run_row = None
@@ -153,7 +191,7 @@ async def main() -> int:
     error_message: Optional[str] = None
 
     try:
-        async with scraper_cls() as scraper:
+        async with scraper:
             payloads = await scraper.scrape(
                 args.city,
                 args.zone,
@@ -244,6 +282,12 @@ def _parse_args() -> argparse.Namespace:
     )
     p.add_argument("--pages", type=int, default=5)
     p.add_argument("--dry-run", dest="dry_run", action="store_true")
+    p.add_argument(
+        "--via",
+        default="auto",
+        choices=["auto", "apify", "httpx"],
+        help="Scrape backend. 'auto' = apify if APIFY_TOKEN set, else httpx.",
+    )
     return p.parse_args()
 
 
