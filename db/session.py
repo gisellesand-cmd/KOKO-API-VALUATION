@@ -1,30 +1,51 @@
-from typing import AsyncIterator
+from __future__ import annotations
 
-from sqlalchemy.ext.asyncio import (
-    AsyncSession,
-    async_sessionmaker,
-    create_async_engine,
-)
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 
-from db.config import settings
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
+from services.config import get_settings
 
-engine = create_async_engine(
-    settings.database_url,
-    echo=settings.echo_sql,
-    pool_size=10,
-    max_overflow=20,
-    pool_pre_ping=True,
-)
-
-AsyncSessionLocal: async_sessionmaker[AsyncSession] = async_sessionmaker(
-    engine,
-    expire_on_commit=False,
-    class_=AsyncSession,
-)
+_engine = None
+_sessionmaker = None
 
 
-async def get_session() -> AsyncIterator[AsyncSession]:
-    """FastAPI dependency that yields an AsyncSession and closes it on exit."""
-    async with AsyncSessionLocal() as session:
-        yield session
+def get_engine():
+    """Return the lazily-initialized async SQLAlchemy engine."""
+    global _engine
+    if _engine is None:
+        _engine = create_async_engine(
+            get_settings().DATABASE_URL,
+            pool_pre_ping=True,
+            future=True,
+        )
+    return _engine
+
+
+def get_sessionmaker() -> async_sessionmaker[AsyncSession]:
+    """Return the lazily-initialized async session factory."""
+    global _sessionmaker
+    if _sessionmaker is None:
+        _sessionmaker = async_sessionmaker(
+            get_engine(),
+            expire_on_commit=False,
+            class_=AsyncSession,
+        )
+    return _sessionmaker
+
+
+@asynccontextmanager
+async def session_scope() -> AsyncIterator[AsyncSession]:
+    """Async context manager yielding a session and committing on success."""
+    sm = get_sessionmaker()
+    async with sm() as session:
+        try:
+            yield session
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            raise
+
+
+__all__ = ["get_engine", "get_sessionmaker", "session_scope"]
