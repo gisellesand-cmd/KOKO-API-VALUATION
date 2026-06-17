@@ -1,119 +1,198 @@
-import os
-import asyncio
-from datetime import datetime, timezone, timedelta
-from uuid import uuid4
+"""
+Global pytest fixtures for the KOKO MLS Property Valuation API test suite.
 
+This module wires together:
+  * an ephemeral Postgres instance (via testcontainers) for integration tests
+  * an async SQLAlchemy session, transaction-rolled-back per test
+  * an httpx.AsyncClient bound to the FastAPI app via ASGI transport
+  * auth headers helper for API-key protected routes
+  * factory-boy session binding (autouse) so factories "just work" in tests
+"""
+
+from __future__ import annotations
+
+import asyncio
+from typing import AsyncGenerator, Generator
+
+import httpx
 import pytest
 import pytest_asyncio
+from sqlalchemy.ext.asyncio import (
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
+from testcontainers.postgres import PostgresContainer
 
-os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///:memory:"
-os.environ["ENVIRONMENT"] = "test"
-os.environ["LOG_LEVEL"] = "WARNING"
+# Application imports. We assume the standard layout described in the PRD:
+#   - FastAPI app instance lives at `app.main:app`
+#   - SQLAlchemy declarative Base lives at `app.db.session:Base`
+# These are imported lazily inside fixtures where appropriate to avoid
+# blowing up collection when the dependencies are not yet installed.
 
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
+
+# ---------------------------------------------------------------------------
+# Event loop
+# ---------------------------------------------------------------------------
 
 
 @pytest.fixture(scope="session")
-def event_loop():
+def event_loop() -> Generator[asyncio.AbstractEventLoop, None, None]:
+    """Session-scoped event loop so async fixtures can share state."""
     loop = asyncio.new_event_loop()
     yield loop
     loop.close()
 
 
-@pytest_asyncio.fixture
-async def engine():
-    from db.models import Base
-    eng = create_async_engine("sqlite+aiosqlite:///:memory:", future=True)
-    async with eng.begin() as conn:
+# ---------------------------------------------------------------------------
+# Postgres container
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture(scope="session")
+def postgres_container() -> Generator[PostgresContainer, None, None]:
+    """
+    Spin up a real Postgres for the whole test session.
+
+    Using a real Postgres (not SQLite) is intentional: the valuation core
+    relies on PG-specific features (NUMERIC precision, percentile aggregates,
+    JSONB, etc.) and we will not pretend otherwise in tests.
+    """
+    with PostgresContainer("postgres:16-alpine") as container:
+        yield container
+
+
+@pytest_asyncio.fixture(scope="session")
+async def _async_engine(postgres_container: PostgresContainer):
+    """Build an async engine pointed at the testcontainer."""
+    # testcontainers gives us a sync URL like "postgresql+psycopg2://..."; we
+    # rewrite it for asyncpg.
+    raw_url = postgres_container.get_connection_url()
+    async_url = raw_url.replace("postgresql+psycopg2", "postgresql+asyncpg")
+    if "+asyncpg" not in async_url:
+        async_url = async_url.replace("postgresql://", "postgresql+asyncpg://")
+
+    engine = create_async_engine(async_url, future=True, echo=False)
+
+    # Create schema once for the session. We import Base lazily so collection
+    # does not explode if the app package is missing during scaffolding.
+    from app.db.session import Base  # type: ignore
+
+    async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-    yield eng
-    await eng.dispose()
+
+    yield engine
+
+    await engine.dispose()
 
 
-@pytest_asyncio.fixture
-async def session_factory(engine):
-    return async_sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
+# ---------------------------------------------------------------------------
+# Async session (transaction-per-test, rolled back)
+# ---------------------------------------------------------------------------
 
 
-@pytest_asyncio.fixture
-async def session(session_factory):
-    async with session_factory() as s:
-        yield s
+@pytest_asyncio.fixture(scope="function")
+async def async_session(_async_engine) -> AsyncGenerator[AsyncSession, None]:
+    """
+    Provide a transactional AsyncSession.
 
+    Each test runs inside a transaction that is rolled back at teardown,
+    keeping tests isolated without paying the cost of re-creating the
+    schema between tests.
+    """
+    connection = await _async_engine.connect()
+    transaction = await connection.begin()
 
-@pytest_asyncio.fixture
-async def patched_session_factory(monkeypatch, session_factory):
-    # Redirect db.session.get_sessionmaker/get_engine to use the test in-memory
-    # engine so service-level code that opens its own session hits SQLite.
-    import db.session as db_session
-
-    monkeypatch.setattr(db_session, "get_sessionmaker", lambda: session_factory, raising=False)
-    monkeypatch.setattr(
-        db_session,
-        "get_engine",
-        lambda: session_factory.kw["bind"],
-        raising=False,
+    session_factory = async_sessionmaker(
+        bind=connection,
+        expire_on_commit=False,
+        class_=AsyncSession,
     )
+    session = session_factory()
 
-    from contextlib import asynccontextmanager
-
-    @asynccontextmanager
-    async def _scope():
-        async with session_factory() as s:
-            try:
-                yield s
-                await s.commit()
-            except Exception:
-                await s.rollback()
-                raise
-
-    monkeypatch.setattr(db_session, "session_scope", _scope, raising=False)
-    return session_factory
+    try:
+        yield session
+    finally:
+        await session.close()
+        if transaction.is_active:
+            await transaction.rollback()
+        await connection.close()
 
 
-@pytest_asyncio.fixture
-async def seeded_catalog(session):
-    from db.models import City, Zone, PropertyType
-    city = City(slug="cdmx", name="Ciudad de México", state="CDMX")
-    session.add(city)
-    await session.flush()
-    zone = Zone(slug="roma", name="Roma Norte", city_id=city.id)
-    session.add(zone)
-    ptype = PropertyType(slug="departamento", name="Departamento")
-    session.add(ptype)
-    await session.commit()
-    await session.refresh(city)
-    await session.refresh(zone)
-    await session.refresh(ptype)
-    return {"city": city, "zone": zone, "property_type": ptype}
+# ---------------------------------------------------------------------------
+# API client
+# ---------------------------------------------------------------------------
 
 
-@pytest_asyncio.fixture
-async def seed_comparables(session, seeded_catalog):
-    from db.models import Comparable
+@pytest_asyncio.fixture(scope="function")
+async def api_client(async_session: AsyncSession) -> AsyncGenerator[httpx.AsyncClient, None]:
+    """
+    httpx.AsyncClient that talks to the FastAPI app in-process via ASGI.
 
-    async def _seed(count: int, *, operation: str = "venta", base_price: float = 3_000_000.0,
-                    base_area: float = 80.0, zone_match: bool = True):
-        cat = seeded_catalog
-        created = []
-        for i in range(count):
-            c = Comparable(
-                portal="inmuebles24",
-                external_id=f"ext-{i}-{uuid4().hex[:6]}",
-                city_id=cat["city"].id,
-                zone_id=cat["zone"].id if zone_match else None,
-                property_type_id=cat["property_type"].id,
-                operation=operation,
-                price_mxn=base_price + i * 50_000,
-                area_m2=base_area + (i % 5),
-                bedrooms=2,
-                bathrooms=2,
-                is_active=True,
-                scraped_at=datetime.now(timezone.utc) - timedelta(days=1 + (i % 5)),
-            )
-            session.add(c)
-            created.append(c)
-        await session.commit()
-        return created
+    The DB dependency is overridden to hand out our transactional session
+    so that anything the API writes is rolled back at the end of the test.
+    """
+    from app.main import app  # type: ignore
 
-    return _seed
+    # Best-effort dependency override. We try common dep names; if none are
+    # defined in app.db.session, the override simply has no effect.
+    try:
+        from app.db.session import get_session  # type: ignore
+
+        async def _override_get_session() -> AsyncGenerator[AsyncSession, None]:
+            yield async_session
+
+        app.dependency_overrides[get_session] = _override_get_session
+    except ImportError:  # pragma: no cover - depends on app layout
+        pass
+
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(
+        transport=transport,
+        base_url="http://testserver",
+    ) as client:
+        yield client
+
+    app.dependency_overrides.clear()
+
+
+# ---------------------------------------------------------------------------
+# Auth
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture(scope="function")
+def auth_headers() -> dict[str, str]:
+    """Headers carrying a valid free-tier API key for protected routes."""
+    return {"X-API-Key": "test-key-free"}
+
+
+@pytest.fixture(scope="function")
+def auth_headers_paid() -> dict[str, str]:
+    """Headers carrying a valid paid-tier API key for higher-quota tests."""
+    return {"X-API-Key": "test-key-paid"}
+
+
+# ---------------------------------------------------------------------------
+# Factory wiring
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture(autouse=True)
+def _wire_factories(async_session: AsyncSession) -> None:
+    """
+    Autouse fixture that points every factory-boy SQLAlchemyModelFactory at
+    the per-test session, so tests can simply call `CityFactory()` without
+    having to pass a session in.
+
+    factory-boy expects a sync Session for `sqlalchemy_session`. We hand it
+    the *sync* shadow of the async session by exposing the underlying
+    connection's sync_session attribute when available; otherwise we attach
+    the async session itself and rely on factory subclasses to await.
+    """
+    from tests import factories  # noqa: WPS433 - local import is intentional
+
+    sync_session_proxy = getattr(async_session, "sync_session", async_session)
+
+    for factory_cls in factories.ALL_FACTORIES:
+        factory_cls._meta.sqlalchemy_session = sync_session_proxy  # type: ignore[attr-defined]
