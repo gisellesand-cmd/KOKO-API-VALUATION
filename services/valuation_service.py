@@ -59,6 +59,11 @@ async def _request_valuation_inner(
         )
         result = await compute_valuation(session, engine_req)
 
+        comparable_ids = list(getattr(result, "comparable_ids", result.comparables_used_ids))
+        # ValuationResponse.geographic_scope is NOT NULL; coalesce to "city" when
+        # the engine returns None (only happens with zero comparables).
+        persisted_scope = result.geographic_scope or "city"
+
         now = datetime.now(timezone.utc)
         req_row = ValuationRequest(
             id=request_id,
@@ -76,8 +81,8 @@ async def _request_valuation_inner(
             request_id=request_id,
             confidence_level=result.confidence_level,
             comparables_count=result.comparables_count,
-            geographic_scope=result.geographic_scope,
-            comparable_ids=list(result.comparable_ids),
+            geographic_scope=persisted_scope,
+            comparable_ids=comparable_ids,
             price_min_mxn=result.price_min_mxn,
             price_median_mxn=result.price_median_mxn,
             price_max_mxn=result.price_max_mxn,

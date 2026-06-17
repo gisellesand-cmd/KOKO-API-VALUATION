@@ -45,7 +45,7 @@ async def get_db_session() -> AsyncGenerator[Any, None]:
             "db.session.get_session no está disponible. "
             "Otro especialista debe proveer el módulo db/."
         )
-    async for session in _db_get_session():
+    async with _db_get_session() as session:
         yield session
 
 

@@ -6,7 +6,7 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, Path
 
-from api.dependencies import get_api_key, get_db_session, rate_limit_dependency
+from api.dependencies import get_api_key, rate_limit_dependency
 from api.openapi_examples import (
     CITIES_RESPONSE_EXAMPLE,
     CITY_NOT_FOUND_EXAMPLE,
@@ -26,13 +26,13 @@ except Exception:  # noqa: BLE001
     Zone = Any  # type: ignore[assignment,misc]
     PropertyType = Any  # type: ignore[assignment,misc]
 
-    async def list_cities(db):  # type: ignore[no-redef]
+    async def list_cities():  # type: ignore[no-redef]
         raise RuntimeError("services.catalog_service.list_cities no disponible.")
 
-    async def list_zones(city_slug, db):  # type: ignore[no-redef]
+    async def list_zones(city_slug):  # type: ignore[no-redef]
         raise RuntimeError("services.catalog_service.list_zones no disponible.")
 
-    async def list_property_types(db):  # type: ignore[no-redef]
+    async def list_property_types():  # type: ignore[no-redef]
         raise RuntimeError("services.catalog_service.list_property_types no disponible.")
 
 
@@ -51,11 +51,10 @@ router = APIRouter(prefix="/v1", tags=["Catálogo"])
     },
 )
 async def get_cities(
-    db=Depends(get_db_session),
     _api_key: str | None = Depends(get_api_key),
     _rl: None = Depends(rate_limit_dependency),
 ):
-    cities = await list_cities(db)
+    cities = await list_cities()
     return [c for c in cities if getattr(c, "is_active", True)]
 
 
@@ -76,11 +75,10 @@ async def get_cities(
 )
 async def get_zones(
     city_slug: str = Path(..., examples=["tulum"]),
-    db=Depends(get_db_session),
     _api_key: str | None = Depends(get_api_key),
     _rl: None = Depends(rate_limit_dependency),
 ):
-    return await list_zones(city_slug, db)
+    return await list_zones(city_slug)
 
 
 @router.get(
@@ -99,8 +97,7 @@ async def get_zones(
     },
 )
 async def get_property_types(
-    db=Depends(get_db_session),
     _api_key: str | None = Depends(get_api_key),
     _rl: None = Depends(rate_limit_dependency),
 ):
-    return await list_property_types(db)
+    return await list_property_types()
