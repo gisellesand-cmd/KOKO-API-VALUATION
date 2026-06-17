@@ -7,6 +7,7 @@ ValuationResult with auditable comparable ids.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Optional
 from uuid import UUID
 
@@ -133,3 +134,38 @@ class ValuationEngine:
             comparables_used_ids=[c.id for c in survivors],
             methodology_note=note,
         )
+
+
+@dataclass
+class EngineRequest:
+    """Compat wrapper used by services.valuation_service to invoke the engine."""
+
+    city_id: int
+    zone_id: Optional[int]
+    property_type_id: int
+    operation: str
+    area_m2: float
+    bedrooms: Optional[int] = None
+    bathrooms: Optional[int] = None
+
+
+async def compute_valuation(
+    session: AsyncSession, req: EngineRequest
+) -> ValuationResult:
+    """Thin functional wrapper around ValuationEngine.compute.
+
+    Adapts the EngineRequest dataclass to the engine's keyword-only API and
+    exposes a stable `comparable_ids` attribute alongside the original
+    `comparables_used_ids` so the persistence layer can stay agnostic.
+    """
+    engine = ValuationEngine(session)
+    result = await engine.compute(
+        city_id=req.city_id,
+        zone_id=req.zone_id,
+        property_type_id=req.property_type_id,
+        operation=req.operation,
+        area_m2=req.area_m2,
+    )
+    # Frozen dataclass — set via object.__setattr__ to expose alias.
+    object.__setattr__(result, "comparable_ids", result.comparables_used_ids)
+    return result

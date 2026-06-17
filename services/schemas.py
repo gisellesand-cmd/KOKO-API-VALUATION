@@ -25,7 +25,7 @@ class ValuationOutput(BaseModel):
     request_id: UUID
     confidence_level: Literal["alta", "media", "baja", "insuficiente"]
     comparables_count: int = Field(..., ge=0)
-    geographic_scope: Literal["zone", "city"]
+    geographic_scope: Optional[Literal["zone", "city"]] = None
     price_min_mxn: Optional[float] = None
     price_median_mxn: Optional[float] = None
     price_max_mxn: Optional[float] = None
@@ -60,6 +60,13 @@ class HealthCheckResult(BaseModel):
     checked_at: datetime
 
 
+# Aliases for the api/routers layer (it imports City/Zone/PropertyType/HealthStatus).
+City = CityInfo
+Zone = ZoneInfo
+PropertyType = PropertyTypeInfo
+HealthStatus = HealthCheckResult
+
+
 __all__ = [
     "DISCLAIMER_TEXT",
     "ValuationInput",
@@ -68,4 +75,8 @@ __all__ = [
     "ZoneInfo",
     "PropertyTypeInfo",
     "HealthCheckResult",
+    "City",
+    "Zone",
+    "PropertyType",
+    "HealthStatus",
 ]
