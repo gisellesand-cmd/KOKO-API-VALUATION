@@ -1,0 +1,52 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["DOM", "DOM.Iterable", "ES2022"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "jsx": "react-jsx",
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitReturns": true,
+    "noUncheckedIndexedAccess": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "skipLibCheck": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "useDefineForClassFields": true,
+    "baseUrl": ".",
+    "paths": {
+      "@koko/ui": ["./index.ts"],
+      "@koko/ui/*": ["./*"],
+      "@/tokens": ["./tokens/index.ts"],
+      "@/tokens/*": ["./tokens/*"],
+      "@/utils": ["./utils/index.ts"],
+      "@/utils/*": ["./utils/*"],
+      "@/components": ["./components/index.ts"],
+      "@/components/*": ["./components/*"],
+      "@/patterns": ["./patterns/index.ts"],
+      "@/patterns/*": ["./patterns/*"],
+      "@/icons": ["./icons/index.ts"],
+      "@/icons/*": ["./icons/*"]
+    }
+  },
+  "include": [
+    "index.ts",
+    "tokens/**/*",
+    "utils/**/*",
+    "components/**/*",
+    "patterns/**/*",
+    "icons/**/*",
+    "storybook/**/*"
+  ],
+  "exclude": ["node_modules", "dist", "**/*.cjs"]
+}
