@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="es">
+<head><meta charset="utf-8"><title>Inmuebles24 fixture</title></head>
+<body>
+<div id="listings">
+
+  <!-- Card 1: standard MXN casa, Tulum -->
+  <div data-posting-type="PROPERTY" data-id="MX-NID-100000001" class="postingCard">
+    <h3 class="posting-title">
+      <a href="/propiedades/test-tulum-casa-1.html">Casa en Tulum centro 250 m²</a>
+    </h3>
+    <div class="postingPrices" data-qa="POSTING_CARD_PRICE">$4,500,000</div>
+    <ul class="card-points section-icon-features">
+      <li>250 m² totales</li>
+      <li>3 recámaras</li>
+      <li>2 baños</li>
+    </ul>
+    <div class="postingLocations" data-qa="POSTING_CARD_LOCATION">Centro, Tulum, Quintana Roo</div>
+  </div>
+
+  <!-- Card 2: USD departamento, Aldea Zama -->
+  <div data-posting-type="PROPERTY" data-id="MX-NID-100000002" class="postingCard">
+    <h3 class="posting-title">
+      <a href="/propiedades/test-tulum-depto-2.html">Departamento Aldea Zama 95 m²</a>
+    </h3>
+    <div class="postingPrices" data-qa="POSTING_CARD_PRICE">USD $185,000</div>
+    <ul class="card-points section-icon-features">
+      <li>95 m² totales</li>
+      <li>2 recámaras</li>
+      <li>2 baños</li>
+    </ul>
+    <div class="postingLocations" data-qa="POSTING_CARD_LOCATION">Aldea Zama, Tulum, Quintana Roo</div>
+  </div>
+
+  <!-- Card 3: preventa departamento, Tulum -->
+  <div data-posting-type="PROPERTY" data-id="MX-NID-100000003" class="postingCard">
+    <h3 class="posting-title">
+      <a href="/propiedades/test-tulum-preventa-3.html">PREVENTA Departamento Entrega 2027</a>
+    </h3>
+    <div class="postingPrices" data-qa="POSTING_CARD_PRICE">$3,800,000</div>
+    <ul class="card-points section-icon-features">
+      <li>110 m² totales</li>
+      <li>2 recámaras</li>
+      <li>2 baños</li>
+    </ul>
+    <div class="postingLocations" data-qa="POSTING_CARD_LOCATION">Tulum, Quintana Roo</div>
+  </div>
+
+  <!-- Card 4: missing price — should be SKIPPED -->
+  <div data-posting-type="PROPERTY" data-id="MX-NID-100000004" class="postingCard">
+    <h3 class="posting-title">
+      <a href="/propiedades/test-tulum-skip-4.html">Casa sin precio mostrado</a>
+    </h3>
+    <ul class="card-points section-icon-features">
+      <li>180 m² totales</li>
+      <li>3 recámaras</li>
+      <li>2 baños</li>
+    </ul>
+    <div class="postingLocations" data-qa="POSTING_CARD_LOCATION">Tulum, Quintana Roo</div>
+  </div>
+
+</div>
+</body>
+</html>

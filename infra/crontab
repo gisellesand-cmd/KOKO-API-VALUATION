@@ -1,0 +1,7 @@
+# m h dom mon dow command
+# Scrape Vivanuncios every 6 hours, staggered to avoid burst
+0 */6 * * * python -m scrapers.cli scrape --source vivanuncios
+# Banxico FIX (USD/MXN) refresh daily at 06:00 UTC (00:00 CDMX)
+0 6 * * * python -m scrapers.cli refresh-exchange-rate --source banxico
+# Cleanup stale comparables nightly at 04:00 UTC
+0 4 * * * python -m scrapers.cli cleanup-stale
