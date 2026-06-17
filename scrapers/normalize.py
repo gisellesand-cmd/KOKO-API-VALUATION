@@ -25,7 +25,8 @@ async def _latest_usd_mxn_rate(session: Any, as_of_date) -> Optional[Decimal]:
         return None
     stmt = (
         select(ExchangeRate)
-        .where(ExchangeRate.currency_pair == "USD/MXN")
+        .where(ExchangeRate.base_currency == "USD")
+        .where(ExchangeRate.target_currency == "MXN")
         .where(ExchangeRate.valid_for_date <= as_of_date)
         .order_by(ExchangeRate.valid_for_date.desc())
         .limit(1)

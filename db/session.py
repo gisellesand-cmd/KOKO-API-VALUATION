@@ -48,4 +48,7 @@ async def session_scope() -> AsyncIterator[AsyncSession]:
             raise
 
 
-__all__ = ["get_engine", "get_sessionmaker", "session_scope"]
+get_session = session_scope
+
+
+__all__ = ["get_engine", "get_sessionmaker", "session_scope", "get_session"]

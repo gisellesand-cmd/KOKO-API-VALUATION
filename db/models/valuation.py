@@ -7,7 +7,7 @@ from sqlalchemy import JSON, DateTime, ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
-from db.models import Base
+from db.models.base import Base
 
 
 class ValuationRequest(Base):

@@ -9,7 +9,6 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 from typing import Optional
-from uuid import UUID
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -20,9 +19,9 @@ from db.models import Comparable
 async def fetch_comparables(
     session: AsyncSession,
     *,
-    city_id: UUID,
-    zone_id: Optional[UUID],
-    property_type_id: UUID,
+    city_id: int,
+    zone_id: Optional[int],
+    property_type_id: int,
     operation: str,
     days: int = 90,
 ) -> list[Comparable]:
@@ -33,7 +32,6 @@ async def fetch_comparables(
     fallback path).
     """
     cutoff = datetime.now(timezone.utc) - timedelta(days=days)
-    cutoff_naive = cutoff.replace(tzinfo=None)
 
     stmt = select(Comparable).where(
         Comparable.city_id == city_id,
@@ -41,8 +39,7 @@ async def fetch_comparables(
         Comparable.operation == operation,
         Comparable.active.is_(True),
         Comparable.is_preventa.is_(False),
-        Comparable.currency == "MXN",
-        Comparable.scraped_at >= cutoff_naive,
+        Comparable.scraped_at >= cutoff,
     )
     if zone_id is not None:
         stmt = stmt.where(Comparable.zone_id == zone_id)
