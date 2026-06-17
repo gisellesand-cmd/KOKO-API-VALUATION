@@ -5,7 +5,7 @@ from datetime import datetime
 from sqlalchemy import DateTime, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
-from db.models import Base
+from db.models.base import Base
 
 
 class ScrapeLog(Base):
