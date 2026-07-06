@@ -3,11 +3,14 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "koko-valuation-tests"
+name = "koko-valuation-api"
 version = "0.1.0"
-description = "Test suite for the KOKO MLS Property Valuation API"
+description = "KOKO MLS Property Valuation API"
 requires-python = ">=3.11"
-readme = "tests/README.md"
+readme = "README.md"
+
+[tool.setuptools]
+packages = ["api", "auth", "db", "services", "valuation", "scrapers"]
 
 [project.optional-dependencies]
 test = [
