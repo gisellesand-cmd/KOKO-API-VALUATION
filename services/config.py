@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from functools import lru_cache
 from typing import Literal
+from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -33,6 +34,29 @@ class Settings(BaseSettings):
         if isinstance(v, str):
             return [item.strip() for item in v.split(",") if item.strip()]
         return v
+
+    @field_validator("DATABASE_URL", mode="before")
+    @classmethod
+    def _normalize_database_url(cls, v: object) -> object:
+        if not isinstance(v, str):
+            return v
+
+        value = v.strip()
+        if not value:
+            return value
+
+        if value.startswith("postgres://"):
+            value = value.replace("postgres://", "postgresql+asyncpg://", 1)
+        elif value.startswith("postgresql://"):
+            value = value.replace("postgresql://", "postgresql+asyncpg://", 1)
+
+        parsed = urlparse(value)
+        if parsed.hostname and "supabase" in parsed.hostname and "sslmode" not in dict(parse_qsl(parsed.query)):
+            query = dict(parse_qsl(parsed.query))
+            query["sslmode"] = "require"
+            value = urlunparse(parsed._replace(query=urlencode(query)))
+
+        return value
 
 
 @lru_cache(maxsize=1)
