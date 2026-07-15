@@ -62,6 +62,7 @@ class ValuationEngine:
         )
 
         fallback_to_city = False
+        fallback_to_general = False
         geographic_scope: Optional[str] = "zone" if zone_id is not None else "city"
 
         if zone_id is not None and len(comparables) < _ZONE_MIN_FOR_NO_FALLBACK:
@@ -76,6 +77,21 @@ class ValuationEngine:
             comparables = city_wide
             fallback_to_city = True
             geographic_scope = "city"
+
+        if not comparables:
+            general_market = await fetch_comparables(
+                self.session,
+                city_id=city_id,
+                zone_id=None,
+                property_type_id=None,
+                operation=operation,
+                days=_LOOKBACK_DAYS,
+            )
+            if general_market:
+                comparables = general_market
+                fallback_to_general = True
+                fallback_to_city = True
+                geographic_scope = "city"
 
         if not comparables:
             return ValuationResult(
@@ -108,6 +124,8 @@ class ValuationEngine:
         price_max_mxn = round(float(p75) * area_m2, 2)
 
         confidence_level = classify_confidence(n_after, fallback_to_city)
+        if fallback_to_general:
+            confidence_level = "baja"
 
         scope_label = "la zona solicitada" if geographic_scope == "zone" else "la ciudad"
         note = (
@@ -116,7 +134,13 @@ class ValuationEngine:
         )
         if n_outliers:
             note += f" Se descartaron {n_outliers} valor(es) atípico(s) por IQR."
-        if fallback_to_city:
+        if fallback_to_general:
+            note += (
+                " No se encontraron anuncios del tipo de propiedad solicitado. "
+                "Esta estimación se basa en el precio por m² del mercado "
+                "general de la ciudad. Úsala como referencia aproximada."
+            )
+        elif fallback_to_city:
             note += (
                 " La zona específica no alcanzó el mínimo de 4 anuncios, "
                 "por lo que la búsqueda se amplió a toda la ciudad y la "

@@ -149,11 +149,13 @@ class ApifyScraper(BaseScraper):
             "customData": {"maxPages": max_pages},
         }
 
+        from datetime import timedelta
+
         try:
             run = await asyncio.wait_for(
                 self._client.actor(_ACTOR_ID).call(
                     run_input=run_input,
-                    timeout_secs=_RUN_TIMEOUT_SECONDS,
+                    run_timeout=timedelta(seconds=_RUN_TIMEOUT_SECONDS),
                     memory_mbytes=2048,
                 ),
                 timeout=_RUN_TIMEOUT_SECONDS + 30,
@@ -170,28 +172,34 @@ class ApifyScraper(BaseScraper):
         if run is None:
             raise ScrapeError("apify_run_no_response", actor=_ACTOR_ID)
 
-        status = run.get("status")
+        status = getattr(run, "status", None) or (run.get("status") if isinstance(run, dict) else None)
+        run_id = getattr(run, "id", None) or (run.get("id") if isinstance(run, dict) else None)
         if status != "SUCCEEDED":
             raise ScrapeError(
                 "apify_run_failed",
                 actor=_ACTOR_ID,
                 status=status,
-                run_id=run.get("id"),
+                run_id=run_id,
             )
 
-        dataset_id = run.get("defaultDatasetId")
+        dataset_id = getattr(run, "default_dataset_id", None) or (run.get("defaultDatasetId") if isinstance(run, dict) else None)
         if not dataset_id:
-            raise ScrapeError("apify_no_dataset", actor=_ACTOR_ID, run_id=run.get("id"))
+            raise ScrapeError("apify_no_dataset", actor=_ACTOR_ID, run_id=run_id)
 
-        items_page = await self._client.dataset(dataset_id).list_items()
-        items = items_page.items if hasattr(items_page, "items") else items_page.get("items", [])
+        items_result = await self._client.dataset(dataset_id).list_items()
+        if hasattr(items_result, "items"):
+            items = items_result.items
+        elif isinstance(items_result, dict):
+            items = items_result.get("items", [])
+        else:
+            items = list(items_result) if items_result else []
 
         self.logger.info(
             "apify scrape finished",
             extra={
                 "event": "apify_done",
                 "source": self._source_key,
-                "run_id": run.get("id"),
+                "run_id": run_id,
                 "items": len(items),
             },
         )

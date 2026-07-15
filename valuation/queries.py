@@ -21,7 +21,7 @@ async def fetch_comparables(
     *,
     city_id: int,
     zone_id: Optional[int],
-    property_type_id: int,
+    property_type_id: Optional[int],
     operation: str,
     days: int = 90,
 ) -> list[Comparable]:
@@ -29,18 +29,20 @@ async def fetch_comparables(
     requested taxonomy and scraped within the last `days` days.
 
     When `zone_id` is None the query is city-wide (used by the engine's
-    fallback path).
+    fallback path). When `property_type_id` is None the query spans all
+    property types (used by the general-market fallback).
     """
     cutoff = datetime.now(timezone.utc) - timedelta(days=days)
 
     stmt = select(Comparable).where(
         Comparable.city_id == city_id,
-        Comparable.property_type_id == property_type_id,
         Comparable.operation == operation,
         Comparable.active.is_(True),
         Comparable.is_preventa.is_(False),
         Comparable.scraped_at >= cutoff,
     )
+    if property_type_id is not None:
+        stmt = stmt.where(Comparable.property_type_id == property_type_id)
     if zone_id is not None:
         stmt = stmt.where(Comparable.zone_id == zone_id)
 
