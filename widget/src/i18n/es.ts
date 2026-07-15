@@ -1,5 +1,5 @@
 export const es = {
-  title: 'Estimador de valor KOKO',
+  title: 'Estimador de valor KOKO™',
   subtitle: 'Recibe un rango de valor basado en anuncios reales de la zona.',
   form: {
     operation: {

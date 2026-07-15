@@ -23,7 +23,7 @@ export interface PropertyType {
 
 export interface ValuationRequest {
   city_slug: string;
-  zone_slug: string;
+  zone_slug?: string;
   property_type_slug: string;
   operation: Operation;
   area_m2: number;

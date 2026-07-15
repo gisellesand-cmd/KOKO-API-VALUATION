@@ -4,12 +4,19 @@
     {
       "src": "api/main.py",
       "use": "@vercel/python"
+    },
+    {
+      "src": "public/**",
+      "use": "@vercel/static"
     }
   ],
   "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "api/main.py"
-    }
+    { "src": "/v1/(.*)", "dest": "api/main.py" },
+    { "src": "/docs", "dest": "api/main.py" },
+    { "src": "/redoc", "dest": "api/main.py" },
+    { "src": "/openapi.json", "dest": "api/main.py" },
+    { "src": "/health(.*)", "dest": "api/main.py" },
+    { "src": "/assets/(.*)", "dest": "public/assets/$1" },
+    { "src": "/(.*)", "dest": "public/$1" }
   ]
 }

@@ -80,6 +80,11 @@ def _cors_origins() -> list[str]:
     raw = os.environ.get("CORS_ORIGINS", "*").strip()
     if raw == "" or raw == "*":
         return ["*"]
+    if raw.startswith("["):
+        try:
+            return json.loads(raw)
+        except json.JSONDecodeError:
+            pass
     return [origin.strip() for origin in raw.split(",") if origin.strip()]
 
 
@@ -114,10 +119,11 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+_origins = _cors_origins()
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=_cors_origins(),
-    allow_credentials=True,
+    allow_origins=_origins,
+    allow_credentials="*" not in _origins,
     allow_methods=["*"],
     allow_headers=["*"],
     expose_headers=["X-Request-ID"],

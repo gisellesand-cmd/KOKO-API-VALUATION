@@ -50,11 +50,12 @@ class Settings(BaseSettings):
         elif value.startswith("postgresql://"):
             value = value.replace("postgresql://", "postgresql+asyncpg://", 1)
 
+        # Strip sslmode from URL — asyncpg doesn't support it as a query param.
+        # SSL is handled via connect_args in db/session.py instead.
         parsed = urlparse(value)
-        if parsed.hostname and "supabase" in parsed.hostname and "sslmode" not in dict(parse_qsl(parsed.query)):
-            query = dict(parse_qsl(parsed.query))
-            query["sslmode"] = "require"
-            value = urlunparse(parsed._replace(query=urlencode(query)))
+        query = dict(parse_qsl(parsed.query))
+        query.pop("sslmode", None)
+        value = urlunparse(parsed._replace(query=urlencode(query) if query else ""))
 
         return value
 

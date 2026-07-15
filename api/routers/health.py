@@ -25,6 +25,7 @@ except Exception:  # noqa: BLE001
 router = APIRouter(tags=["Salud"])
 
 
+
 @router.get(
     "/health",
     response_model=HealthStatus,

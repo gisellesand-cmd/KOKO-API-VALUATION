@@ -1,11 +1,13 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 [data-koko-widget] {
-  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
+  font-family: 'Poppins', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
     'Helvetica Neue', Arial, sans-serif;
-  color: #1b1f23;
+  color: #2d2d2d;
   line-height: 1.45;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -30,7 +32,7 @@
 }
 
 [data-koko-widget] :focus-visible {
-  outline: 2px solid var(--koko-primary, #0e4f39);
+  outline: 2px solid var(--koko-primary, #C75B6A);
   outline-offset: 2px;
   border-radius: 6px;
 }
