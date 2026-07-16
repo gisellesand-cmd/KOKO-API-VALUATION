@@ -46,7 +46,7 @@ class Comparable(Base):
     price_original: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
     currency_original: Mapped[str] = mapped_column(String(3), nullable=False)
     price_mxn: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
-    area_m2: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
+    area_m2: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
     price_per_m2_mxn: Mapped[Optional[Decimal]] = mapped_column(
         Numeric(12, 2), nullable=True
     )

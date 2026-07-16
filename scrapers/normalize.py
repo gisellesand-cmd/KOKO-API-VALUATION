@@ -113,6 +113,12 @@ async def normalize_payload(
             extra={"event": "missing_area", "source_url": payload.source_url},
         )
         return None
+    if payload.area_m2 > 10_000_000:
+        logger.info(
+            "dropping listing — area_m2 implausibly large",
+            extra={"event": "area_too_large", "area_m2": str(payload.area_m2), "source_url": payload.source_url},
+        )
+        return None
     city_id = await _resolve_city_id(session, payload.city)
     if city_id is None:
         logger.warning(
