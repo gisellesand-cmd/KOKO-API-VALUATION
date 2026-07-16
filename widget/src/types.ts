@@ -4,7 +4,7 @@ export type Operation = 'venta' | 'renta';
 
 export type ConfidenceLevel = 'alta' | 'media' | 'baja' | 'insuficiente';
 
-export type GeographicScope = 'zona' | 'ciudad' | 'nacional';
+export type GeographicScope = 'zone' | 'city' | 'nacional';
 
 export interface City {
   slug: string;

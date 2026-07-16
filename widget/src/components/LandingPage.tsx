@@ -145,8 +145,8 @@ const pageStyles: Record<string, React.CSSProperties> = {
     flexWrap: 'wrap' as const,
   },
   featureCard: {
-    flex: '1 1 200px',
-    maxWidth: 240,
+    flex: '1 1 220px',
+    maxWidth: 280,
     textAlign: 'center' as const,
     padding: '24px 16px',
     backgroundColor: '#fff',

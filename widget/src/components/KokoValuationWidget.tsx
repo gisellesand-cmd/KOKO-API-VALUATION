@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { Component, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { KokoApiClient } from '../lib/api';
 import { formatMxn, formatRange, formatPricePerM2 } from '../lib/format';
 import { getStrings } from '../i18n';
@@ -22,13 +22,42 @@ interface Props {
 
 type Step = 'form' | 'result';
 
+class KokoErrorBoundary extends Component<
+  { locale: Locale; children: React.ReactNode },
+  { hasError: boolean }
+> {
+  state = { hasError: false };
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  render() {
+    if (this.state.hasError) {
+      const msg = getStrings(this.props.locale).errors.boundary;
+      return (
+        <div style={{ ...styles.card, textAlign: 'center' as const, padding: '32px 16px' }}>
+          <p style={{ fontSize: 14, color: '#B42318' }}>{msg}</p>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 const CONFIDENCE_COLORS: Record<string, { bg: string; text: string; dot: string }> = {
   alta: { bg: '#ECFDF3', text: '#067647', dot: '#067647' },
   media: { bg: '#FEF6E7', text: '#B54708', dot: '#B54708' },
   baja: { bg: '#FFF4ED', text: '#C4320A', dot: '#C4320A' },
 };
 
-export function KokoValuationWidget({ apiUrl, locale, primaryColor, onCompleted }: Props) {
+export function KokoValuationWidget(props: Props) {
+  return (
+    <KokoErrorBoundary locale={props.locale}>
+      <KokoValuationWidgetInner {...props} />
+    </KokoErrorBoundary>
+  );
+}
+
+function KokoValuationWidgetInner({ apiUrl, locale, primaryColor, onCompleted }: Props) {
   const t = useMemo(() => getStrings(locale), [locale]);
   const client = useMemo(() => new KokoApiClient({ baseUrl: apiUrl }), [apiUrl]);
 
@@ -102,7 +131,7 @@ export function KokoValuationWidget({ apiUrl, locale, primaryColor, onCompleted 
     if (!areaM2) errs.area = t.form.errors.required;
     else if (isNaN(area)) errs.area = t.form.errors.areaInteger;
     else if (area <= 0) errs.area = t.form.errors.areaMin;
-    else if (area > 10000) errs.area = t.form.errors.areaMax;
+    else if (area > 1_000_000) errs.area = t.form.errors.areaMax;
     setFieldErrors(errs);
     return Object.keys(errs).length === 0;
   }, [citySlug, propertyTypeSlug, areaM2, t]);
@@ -160,7 +189,14 @@ export function KokoValuationWidget({ apiUrl, locale, primaryColor, onCompleted 
     setStep('form');
     setResult(null);
     setError('');
-  }, []);
+    setCitySlug('');
+    setZoneSlug('');
+    setPropertyTypeSlug(propertyTypes.length > 0 ? propertyTypes[0].slug : '');
+    setAreaM2('');
+    setBedrooms('');
+    setBathrooms('');
+    setFieldErrors({});
+  }, [propertyTypes]);
 
   if (step === 'result' && result) {
     return (
@@ -269,7 +305,7 @@ export function KokoValuationWidget({ apiUrl, locale, primaryColor, onCompleted 
               placeholder={t.form.area.placeholder}
               style={{ ...styles.input, paddingRight: 48 }}
               min={1}
-              max={10000}
+              max={1000000}
               step="any"
             />
             <span style={styles.suffix}>{t.form.area.suffix}</span>
@@ -353,8 +389,7 @@ function ResultView({
   }
 
   const conf = CONFIDENCE_COLORS[result.confidence_level] || CONFIDENCE_COLORS.media;
-  const scope = result.geographic_scope as string;
-  const scopeLabel = scope === 'zone' || scope === 'zona' ? 'la zona' : 'la ciudad';
+  const scopeLabel = result.geographic_scope === 'zone' ? 'la zona' : 'la ciudad';
 
   return (
     <div style={styles.card}>
@@ -406,7 +441,7 @@ function ResultView({
       </div>
 
       <p style={{ fontSize: 12, color: '#5A5A5A', margin: '12px 0 0', lineHeight: 1.5 }}>
-        {t.result.basedOn(result.comparables_count, scopeLabel)}
+        {result.methodology_note || t.result.basedOn(result.comparables_count, scopeLabel)}
       </p>
 
       <p style={{ fontSize: 11, color: '#9CA3AF', margin: '8px 0 0', fontStyle: 'italic' }}>

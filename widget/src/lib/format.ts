@@ -40,6 +40,18 @@ export function formatMxn(
 
 export function formatRange(min: number, max: number): string {
   if (!isFinitNumber(min) || !isFinitNumber(max)) return PLACEHOLDER;
+  const absMin = Math.abs(min);
+  const absMax = Math.abs(max);
+  if (absMin >= 1_000_000 && absMax >= 1_000_000) {
+    const minM = trimZeroDecimal(min / 1_000_000, 1);
+    const maxM = trimZeroDecimal(max / 1_000_000, 1);
+    return `$${minM} M – $${maxM} M MXN`;
+  }
+  if (absMin >= 1_000 && absMax >= 1_000 && absMax < 1_000_000) {
+    const minK = new Intl.NumberFormat('es-MX').format(Math.round(min / 1_000));
+    const maxK = new Intl.NumberFormat('es-MX').format(Math.round(max / 1_000));
+    return `$${minK} mil – $${maxK} mil MXN`;
+  }
   return `${formatMxn(min)} – ${formatMxn(max)}`;
 }
 

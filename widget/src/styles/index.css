@@ -37,6 +37,22 @@
   border-radius: 6px;
 }
 
+@media (max-width: 600px) {
+  [data-koko-widget] section {
+    flex-direction: column !important;
+    align-items: center !important;
+  }
+
+  [data-koko-widget] section > div {
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+
+  [data-koko-widget] h1 {
+    font-size: 24px !important;
+  }
+}
+
 @keyframes koko-spin {
   to {
     transform: rotate(360deg);
