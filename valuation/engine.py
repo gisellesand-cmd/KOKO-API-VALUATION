@@ -147,11 +147,7 @@ class ValuationEngine:
                 "general de la ciudad. Úsala como referencia aproximada."
             )
         elif fallback_to_city:
-            note += (
-                " La zona específica no alcanzó el mínimo de 4 anuncios, "
-                "por lo que la búsqueda se amplió a toda la ciudad y la "
-                "confianza se redujo un nivel."
-            )
+            pass
 
         return ValuationResult(
             confidence_level=confidence_level,
