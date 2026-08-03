@@ -12,8 +12,7 @@ export function LandingPage({ apiUrl, locale }: Props) {
     <div style={pageStyles.wrapper}>
       <nav style={pageStyles.nav}>
         <div style={pageStyles.logoWrap}>
-          <span style={pageStyles.logo}>KOKO</span>
-          <span style={pageStyles.tm}>™</span>
+          <img src="/assets/koko-logo.png" alt="KOKO" style={pageStyles.logoImg} />
           <div style={pageStyles.taglineBlock}>
             <span style={pageStyles.taglineLine}>MEXICO</span>
             <span style={pageStyles.taglineLine}>LISTING</span>
@@ -85,20 +84,11 @@ const pageStyles: Record<string, React.CSSProperties> = {
   logoWrap: {
     display: 'flex',
     alignItems: 'center',
-    gap: 4,
+    gap: 10,
   },
-  logo: {
-    fontSize: 28,
-    fontWeight: 800,
-    color: '#2D2D2D',
-    letterSpacing: 2,
-  },
-  tm: {
-    fontSize: 11,
-    fontWeight: 600,
-    color: '#2D2D2D',
-    verticalAlign: 'super',
-    marginRight: 10,
+  logoImg: {
+    height: 44,
+    width: 'auto' as const,
   },
   taglineBlock: {
     display: 'flex',
