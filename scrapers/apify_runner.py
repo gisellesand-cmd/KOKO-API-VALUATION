@@ -149,13 +149,11 @@ class ApifyScraper(BaseScraper):
             "customData": {"maxPages": max_pages},
         }
 
-        from datetime import timedelta
-
         try:
             run = await asyncio.wait_for(
                 self._client.actor(_ACTOR_ID).call(
                     run_input=run_input,
-                    run_timeout=timedelta(seconds=_RUN_TIMEOUT_SECONDS),
+                    timeout_secs=_RUN_TIMEOUT_SECONDS,
                     memory_mbytes=2048,
                 ),
                 timeout=_RUN_TIMEOUT_SECONDS + 30,
