@@ -38,21 +38,21 @@ export function LandingPage({ apiUrl, locale }: Props) {
 
       <section style={pageStyles.features}>
         <div style={pageStyles.featureCard}>
-          <div style={pageStyles.featureIcon}>📊</div>
+
           <h3 style={pageStyles.featureTitle}>Datos reales</h3>
           <p style={pageStyles.featureDesc}>
             Comparamos con anuncios actuales de Inmuebles24 y otras fuentes de tu zona.
           </p>
         </div>
         <div style={pageStyles.featureCard}>
-          <div style={pageStyles.featureIcon}>🎯</div>
+
           <h3 style={pageStyles.featureTitle}>Transparente</h3>
           <p style={pageStyles.featureDesc}>
             Te decimos cuántos comparables usamos y el nivel de confianza del resultado.
           </p>
         </div>
         <div style={pageStyles.featureCard}>
-          <div style={pageStyles.featureIcon}>⚡</div>
+
           <h3 style={pageStyles.featureTitle}>Instantáneo</h3>
           <p style={pageStyles.featureDesc}>
             Resultados en segundos. Sin necesidad de registro ni datos personales.

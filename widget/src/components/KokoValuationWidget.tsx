@@ -377,7 +377,6 @@ function ResultView({
     return (
       <div style={styles.card}>
         <div style={{ textAlign: 'center' as const, padding: '32px 16px' }}>
-          <div style={{ fontSize: 48, marginBottom: 12 }}>📊</div>
           <h3 style={{ ...styles.title, fontSize: 18 }}>{t.result.insufficient.title}</h3>
           <p style={{ ...styles.subtitle, marginBottom: 24 }}>{result.methodology_note}</p>
           <button onClick={onNewEstimate} style={{ ...styles.submitBtn, backgroundColor: primary }}>

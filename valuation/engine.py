@@ -133,7 +133,7 @@ class ValuationEngine:
             f"en los últimos {_LOOKBACK_DAYS} días."
         )
         if n_outliers:
-            note += f" Se descartaron {n_outliers} valor(es) atípico(s) por IQR."
+            pass
         if fallback_to_general:
             note += (
                 " No se encontraron anuncios del tipo de propiedad solicitado. "
