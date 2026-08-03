@@ -17,6 +17,7 @@ except ImportError:
 from scrapers.apify_runner import ApifyScraper, ConfigurationError
 from scrapers.base import ScrapeError
 from scrapers.inmuebles24 import Inmuebles24Scraper
+from scrapers.marketplace import MarketplaceScraper
 from scrapers.normalize import normalize_payload
 from scrapers.vivanuncios import VivanunciosScraper
 
@@ -39,6 +40,7 @@ except ImportError:
 SCRAPERS = {
     "inmuebles24": Inmuebles24Scraper,
     "vivanuncios": VivanunciosScraper,
+    "marketplace": MarketplaceScraper,
 }
 
 
@@ -49,6 +51,8 @@ def _resolve_via(requested: str) -> str:
 
 
 def _build_scraper(source: str, via: str):
+    if source == "marketplace":
+        return MarketplaceScraper()
     if via == "apify":
         return ApifyScraper(source_key=source)
     cls = SCRAPERS.get(source)

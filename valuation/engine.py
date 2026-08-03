@@ -123,6 +123,12 @@ class ValuationEngine:
         price_median_mxn = round(float(median_ppm2) * area_m2, 2)
         price_max_mxn = round(float(p75) * area_m2, 2)
 
+        _RENTA_MAX_SPREAD = 1000.0
+        if operation == "renta" and (price_max_mxn - price_min_mxn) > _RENTA_MAX_SPREAD:
+            half = _RENTA_MAX_SPREAD / 2
+            price_min_mxn = round(price_median_mxn - half, 2)
+            price_max_mxn = round(price_median_mxn + half, 2)
+
         confidence_level = classify_confidence(n_after, fallback_to_city)
         if fallback_to_general:
             confidence_level = "baja"
