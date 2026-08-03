@@ -23,6 +23,7 @@ CITIES = [
     {"slug": "cancun", "name": "Cancún", "country": "MX", "state": "Quintana Roo"},
     {"slug": "playa-del-carmen", "name": "Playa del Carmen", "country": "MX", "state": "Quintana Roo"},
     {"slug": "merida", "name": "Mérida", "country": "MX", "state": "Yucatán"},
+    {"slug": "queretaro", "name": "Querétaro", "country": "MX", "state": "Querétaro"},
 ]
 
 ZONES_BY_CITY = {
@@ -30,6 +31,7 @@ ZONES_BY_CITY = {
     "cancun": ["Zona Hotelera", "Puerto Cancún", "Aqua", "Centro", "SM 17", "SM 21"],
     "playa-del-carmen": ["Playacar", "Centro", "Coco Beach", "Ejido"],
     "merida": ["Centro Histórico", "Montebello", "Altabrisa", "Temozón Norte", "Cholul", "García Ginerés"],
+    "queretaro": ["Centro Histórico", "Juriquilla", "Zibatá", "El Refugio", "Milenio III", "Corregidora"],
 }
 
 PROPERTY_TYPES = [
