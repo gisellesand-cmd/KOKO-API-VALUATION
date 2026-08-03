@@ -18,6 +18,7 @@ from scrapers.apify_runner import ApifyScraper, ConfigurationError
 from scrapers.base import ScrapeError
 from scrapers.inmuebles24 import Inmuebles24Scraper
 from scrapers.marketplace import MarketplaceScraper
+from scrapers.mercadolibre import MercadoLibreScraper
 from scrapers.normalize import normalize_payload
 from scrapers.vivanuncios import VivanunciosScraper
 
@@ -41,6 +42,7 @@ SCRAPERS = {
     "inmuebles24": Inmuebles24Scraper,
     "vivanuncios": VivanunciosScraper,
     "marketplace": MarketplaceScraper,
+    "mercadolibre": MercadoLibreScraper,
 }
 
 
