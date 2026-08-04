@@ -24,6 +24,7 @@ CITIES = [
     {"slug": "playa-del-carmen", "name": "Playa del Carmen", "country": "MX", "state": "Quintana Roo"},
     {"slug": "merida", "name": "Mérida", "country": "MX", "state": "Yucatán"},
     {"slug": "queretaro", "name": "Querétaro", "country": "MX", "state": "Querétaro"},
+    {"slug": "guadalajara", "name": "Guadalajara", "country": "MX", "state": "Jalisco"},
 ]
 
 ZONES_BY_CITY = {
@@ -32,6 +33,7 @@ ZONES_BY_CITY = {
     "playa-del-carmen": ["Playacar", "Centro", "Coco Beach", "Ejido"],
     "merida": ["Centro Histórico", "Montebello", "Altabrisa", "Temozón Norte", "Cholul", "García Ginerés"],
     "queretaro": ["Centro Histórico", "Juriquilla", "Zibatá", "El Refugio", "Milenio III", "Corregidora"],
+    "guadalajara": ["Zapopan", "Providencia", "Chapultepec", "Centro Histórico", "Tlaquepaque", "Americana"],
 }
 
 PROPERTY_TYPES = [

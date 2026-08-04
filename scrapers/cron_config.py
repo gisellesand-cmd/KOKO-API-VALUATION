@@ -16,7 +16,7 @@ class ScrapeJob(TypedDict):
     notes: str
 
 
-_CITIES = ["tulum", "cancun", "playa-del-carmen", "merida", "queretaro"]
+_CITIES = ["tulum", "cancun", "playa-del-carmen", "merida", "queretaro", "guadalajara"]
 _PROPERTY_TYPES = ["casa", "departamento"]
 _OPERATIONS = ["venta", "renta"]
 
@@ -47,7 +47,7 @@ def _build_vivanuncios_jobs() -> list[ScrapeJob]:
     # One city per 2h slot rotates through Tulum, Cancun, Playa del Carmen.
     # Free-tier 30-min throttle is enforced in-process — the cron just spaces runs further.
     jobs: list[ScrapeJob] = []
-    hour_for_city = {"tulum": "0,6,12,18", "merida": "1,7,13,19", "cancun": "2,8,14,20", "playa-del-carmen": "4,10,16,22", "queretaro": "3,9,15,21"}
+    hour_for_city = {"tulum": "0,6,12,18", "merida": "1,7,13,19", "cancun": "2,8,14,20", "playa-del-carmen": "4,10,16,22", "queretaro": "3,9,15,21", "guadalajara": "5,11,17,23"}
     for city in _CITIES:
         for pt in _PROPERTY_TYPES:
             for op in _OPERATIONS:

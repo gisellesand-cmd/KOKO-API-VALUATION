@@ -30,6 +30,7 @@ _CITY_TO_STATE_PATH = {
     "playa-del-carmen": "quintana-roo/playa-del-carmen",
     "merida": "yucatan/merida",
     "queretaro": "queretaro/queretaro",
+    "guadalajara": "jalisco/guadalajara",
 }
 
 
